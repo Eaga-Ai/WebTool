@@ -1,0 +1,33 @@
+{
+  "match_keywords": [
+    "looking for an alternative",
+    "is there a tool for",
+    "alternative to",
+    "manual workaround",
+    "takes hours",
+    "frustrating"
+  ],
+  "reddit": {
+    "feed_urls": [
+      "https://www.reddit.com/search.rss?q=%22looking%20for%20an%20alternative%22&sort=new",
+      "https://www.reddit.com/search.rss?q=%22is%20there%20a%20tool%20for%22&sort=new",
+      "https://www.reddit.com/r/SaaS/new/.rss"
+    ]
+  },
+  "hacker_news": {
+    "queries": [
+      "alternative tool",
+      "manual workflow",
+      "looking for software"
+    ],
+    "hits_per_query": 30
+  },
+  "github": {
+    "queries": [
+      "is:issue \"alternative to\"",
+      "is:issue \"is there a tool\"",
+      "is:issue workaround manual"
+    ],
+    "items_per_query": 30
+  }
+}
