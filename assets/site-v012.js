@@ -1,72 +1,64 @@
 (()=>{
   const page=document.body.dataset.page;
+  const isEnglish=new URLSearchParams(location.search).get('lang')==='en';
+  const t=(zh,en)=>isEnglish?en:zh;
   const el=(tag,{className='',text='',attrs={}}={})=>{const node=document.createElement(tag);if(className)node.className=className;if(text)node.textContent=text;Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,value));return node;};
-  const link=(href,text,className='')=>el('a',{className,text,attrs:{href}});
+  const link=(href,text,className='')=>el('a',{className,text,attrs:{href:isEnglish?`${href}${href.includes('?')?'&':'?'}lang=en`:href}});
+  const setMeta=(title,description)=>{document.documentElement.lang=isEnglish?'en':'zh-Hant';document.title=title;const meta=document.querySelector('meta[name="description"]');if(meta)meta.content=description;const ogTitle=document.querySelector('meta[property="og:title"]');if(ogTitle)ogTitle.content=title;const ogDescription=document.querySelector('meta[property="og:description"]');if(ogDescription)ogDescription.content=description;};
   const section=(title,content,className='')=>{const node=el('section',{className:`shell v012-section ${className}`.trim()});node.append(el('h2',{text:title}),content);return node;};
+  const list=items=>{const node=el('ul',{className:'v012-list'});items.forEach(item=>node.append(el('li',{text:item})));return node;};
   function updateNav(){
     const brand=document.querySelector('.nav .brand');
     const links=document.querySelector('.nav .links');
-    if(brand){brand.replaceChildren(el('i'),document.createTextNode(' OVERSEAS OPPORTUNITY RADAR'));brand.href='index.html';}
+    if(brand){brand.replaceChildren(el('i'),document.createTextNode(' OVERSEAS OPPORTUNITY RADAR'));brand.href=isEnglish?'index.html?lang=en':'index.html';}
     if(!links)return;
-    const language=document.querySelector('.nav .lang');
-    links.replaceChildren(
-      link('index.html','首頁'),link('workbench.html','找機會'),link('radar.html','案例庫'),link('method.html','使用方法'),
-      language||el('button',{className:'lang',text:'EN',attrs:{type:'button'}})
-    );
-    const langButton=links.querySelector('.lang');
-    if(langButton){langButton.textContent='EN';langButton.onclick=()=>window.toggleLang?.();}
+    const language=el('button',{className:'lang',text:isEnglish?'中文':'EN',attrs:{type:'button','aria-label':isEnglish?'切換至中文':'Switch to English'}});
+    language.onclick=()=>window.toggleLang?.();
+    links.replaceChildren(link('index.html',t('首頁','Home')),link('radar.html',t('方向庫','Opportunity Library')),link('workbench.html',t('找機會','Find Opportunities')),link('method.html',t('使用方法','How It Works')),language);
   }
-  function list(items){const node=el('ul',{className:'v012-list'});items.forEach(item=>node.append(el('li',{text:item})));return node;}
+  function heroTitle(){const title=el('h1',{className:'v012-title'});title.append(el('span',{text:t('海外機會雷達','Overseas Opportunity Radar')}),el('strong',{text:t('AI 編程出海方向庫與 MVP 驗證助手','AI Tool Idea Library and MVP Validation Assistant')}));return title;}
   function home(){
-    const main=document.querySelector('main');if(!main)return;
-    const hero=el('section',{className:'shell v012-hero'});
-    const copy=el('div',{className:'v012-hero-copy'});
-    copy.append(
-      el('div',{className:'eyebrow',text:'OVERSEAS OPPORTUNITY RADAR · v0.1 BETA'}),
-      el('h1',{text:'貼上海外資料，AI 幫你判斷有沒有機會'}),
-      el('p',{className:'lead',text:'適合 AI 編程出海新手、OPC 和副業開發者。你只要貼上 App 評論、產品介紹、競品資料或榜單文字，系統會幫你整理：用戶在抱怨什麼、哪裡可能有機會、第一版產品該怎麼驗證。'}),
-      el('div',{className:'v012-actions'})
-    );
-    copy.querySelector('.v012-actions').append(link('workbench.html','開始分析海外機會','button acid'),link('radar.html','查看案例','outline'));
-    const beta=el('aside',{className:'v012-beta',text:'目前為 v0.1 內測版，用於海外 App／工具機會研究與 MVP 驗證。AI 分析結果僅作為產品假設與研究參考，不代表市場結論、收入承諾或投資建議。'});
-    hero.append(copy,beta);
-    const steps=el('div',{className:'v012-grid v012-three'});
-    [['1','輸入方向','例如 Shopify SEO App、AI calorie tracker、Chrome LinkedIn extension'],['2','貼入資料','可以是 App 評論、產品介紹、競品資料、榜單文字、差評摘要'],['3','查看結論','得到機會判斷、主要痛點、MVP 驗證方案和下一步行動']].forEach(([number,title,body])=>{const card=el('article',{className:'v012-card'});card.append(el('b',{text:`第 ${number} 步`}),el('h3',{text:title}),el('p',{text:body}));steps.append(card);});
+    const title=t('海外機會雷達｜AI 編程出海方向庫與 MVP 驗證助手','Overseas Opportunity Radar | AI Tool Idea Library and MVP Validation Assistant');
+    const description=t('海外機會雷達是一個面向 AI 編程出海新手、OPC 和副業開發者的海外小工具方向庫與 MVP 驗證助手。先看方向，再用公開評論與競品資料整理可驗證的機會卡。','Overseas Opportunity Radar is an AI tool idea library and MVP validation assistant for global builders, solo founders, OPC operators, and side-project creators. Discover overseas tool directions first, then turn source materials into testable opportunity cards.');
+    setMeta(title,description);const main=document.querySelector('main');if(!main)return;
+    const hero=el('section',{className:'shell v012-hero'});const copy=el('div',{className:'v012-hero-copy'});
+    copy.append(el('div',{className:'eyebrow',text:'OVERSEAS OPPORTUNITY RADAR · v0.1 BETA'}),heroTitle(),el('p',{className:'lead',text:t('先看海外小工具方向，再判斷哪個值得做。','Explore overseas tool directions first, then decide which ones are worth pursuing.')}),el('p',{className:'v012-muted v012-hero-audience',text:t('適合 AI 編程出海新手、OPC 和副業開發者。','Built for beginner AI builders, OPC operators, and side-project creators.')}));
+    const actions=el('div',{className:'v012-actions'});actions.append(link('radar.html',t('查看方向庫','View Opportunity Library'),'button acid'),link('workbench.html',t('開始分析機會','Start Analyzing Opportunities'),'outline'));copy.append(actions);
+    const beta=el('aside',{className:'v012-beta',text:t('目前為 v0.1 內測版，用於海外 App／工具機會研究與 MVP 驗證。AI 分析結果僅作為產品假設與研究參考，不代表市場結論、收入承諾或投資建議。','This is a v0.1 beta for overseas app and tool opportunity research and MVP validation. AI analysis is for research hypotheses only. It does not represent market conclusions, revenue promises, or investment advice.')});hero.append(copy,beta);
+    const definition=el('p',{className:'shell v012-definition',text:t('海外機會雷達是一個 AI 編程出海方向庫與 MVP 驗證工具，幫助新手先看到海外小工具方向，再把資料整理成可驗證的機會卡。','Overseas Opportunity Radar is an AI tool idea library and MVP validation assistant that helps beginner global builders discover overseas tool directions and turn source materials into testable opportunity cards.')});
+    const steps=el('div',{className:'v012-grid v012-three'});[
+      [t('1','1'),t('先看方向庫','Explore the library first'),t('從免費方向卡裡找到幾個可能有機會的海外小工具方向。','Browse free direction cards to find overseas tool ideas worth a closer look.')],
+      [t('2','2'),t('按清單找資料','Collect evidence with a checklist'),t('到 App Store、Google Play、Shopify App Store、Chrome Web Store 等平台採樣評論和競品資料。','Sample reviews and competitor material from App Store, Google Play, Shopify App Store, Chrome Web Store, and similar sources.')],
+      [t('3','3'),t('生成機會卡','Create an opportunity card'),t('把資料貼回來，AI 幫你整理機會判斷、MVP 範圍和下一步驗證任務。','Bring the material back and let AI organize an opportunity judgment, MVP scope, and next validation tasks.')]
+    ].forEach(([number,heading,body])=>{const card=el('article',{className:'v012-card'});card.append(el('b',{text:t(`第 ${number} 步`,`STEP ${number}`)}),el('h3',{text:heading}),el('p',{text:body}));steps.append(card);});
     const outcomes=el('div',{className:'v012-grid v012-two'});
-    const outcomeCard=el('article',{className:'v012-card'});outcomeCard.append(el('h3',{text:'你會得到什麼？'}),list(['這個方向值不值得繼續研究','用戶主要在抱怨什麼','可以切入的小工具方向','第一版 MVP 做什麼、不做什麼','下一步去哪裡補證據','可複製給 Codex／Trae 的 MVP 驗證任務書']));
-    const audienceCard=el('article',{className:'v012-card'});audienceCard.append(el('h3',{text:'適合這些人'}),list(['AI 編程出海新手','OPC 一人公司','副業開發者','想做海外小工具但不知道從哪開始的人','有想法但不會驗證的人','看不懂海外評論和競品資料的人']),el('p',{className:'v012-muted',text:'如果你已經有成熟的市場研究方法、投放數據和專業選品流程，這個工具可能太輕量。'}));outcomes.append(outcomeCard,audienceCard);
-    const cta=el('section',{className:'shell v012-cta'});cta.append(el('p',{text:'先用一段海外資料，測一個你想做的方向。'}),link('workbench.html','開始分析海外機會','button acid'));
-    main.replaceChildren(hero,section('三步找出一個海外小工具機會',steps),outcomes,cta);
+    const outcomeCard=el('article',{className:'v012-card'});outcomeCard.append(el('h3',{text:t('你可以先免費看到什麼？','What you can explore for free')}),list(t(['一批海外小工具方向','每個方向的簡明機會判斷','適合平台與常見變現方式的提示','推薦資料來源','是否值得繼續研究的初步訊號'],['A selection of overseas tool directions','A short opportunity signal for each direction','Hints about relevant platforms and common monetization models','Suggested places to collect evidence','An initial signal for whether the direction deserves more research'])));
+    const analysisCard=el('article',{className:'v012-card'});analysisCard.append(el('h3',{text:t('進一步分析可以得到：','With deeper analysis, you can get:')}),list(t(['完整機會卡','MVP 驗證任務書','可交給 Codex／Trae 的開發任務提示','多方向對比與排序','後續人工點評或陪跑服務'],['A complete opportunity card','An MVP validation task brief','A development brief for Codex or Trae','Multi-direction comparison and prioritization','Optional human review or guided support later'])));
+    const audienceCard=el('article',{className:'v012-card'});audienceCard.append(el('h3',{text:t('適合這些人','Who it is for')}),list(t(['AI 編程出海新手','OPC 一人公司','副業開發者','想做海外小工具但不知道從哪開始的人','有產品想法但不會驗證的人','想用 Codex／Trae 快速做 MVP 的人'],['Beginner AI builders going global','Solo founders and OPC operators','Side-project builders','Indie hackers exploring overseas tools','People with ideas but no validation process','Builders using Codex or Trae to create MVPs'])),el('p',{className:'v012-muted',text:t('如果你已經有成熟的市場研究方法、投放數據和專業選品流程，這個工具可能太輕量。','If you already have a mature market research workflow, paid app intelligence tools, and a professional selection process, this tool may be too lightweight for you.')}));outcomes.append(outcomeCard,analysisCard);
+    const cta=el('section',{className:'shell v012-cta'});cta.append(el('p',{text:t('不知道先做哪個？先從方向庫看起。','Not sure what to build first? Start with the opportunity library.')}),link('radar.html',t('查看方向庫','View Opportunity Library'),'button acid'));
+    main.replaceChildren(hero,definition,section(t('三步開始一個海外小工具方向','Start an overseas tool idea in three steps'),steps),section(t('免費方向與進一步分析','Free direction signals and deeper analysis'),outcomes),section(t('適合這些人','Who it is for'),audienceCard),cta);
   }
   function radar(){
-    document.title='案例庫｜海外機會雷達';
-    const head=document.querySelector('.page-head');if(!head)return;
-    const eyebrow=head.querySelector('.eyebrow');const title=head.querySelector('h1');const lead=head.querySelector('.lead');
-    if(eyebrow)eyebrow.textContent='CASE LIBRARY · 已整理案例';
-    if(title)title.textContent='案例庫｜海外機會雷達';
-    if(lead)lead.textContent='這裡保留已整理的海外需求與機會案例，方便你參考不同方向的分析方式。這些案例不是標準答案，而是幫你理解如何從用戶聲音中整理機會。';
+    setMeta(t('海外小工具方向庫｜海外機會雷達｜AI 編程出海選題','Overseas Tool Opportunity Library | Overseas Opportunity Radar'),t('瀏覽重新整理的海外小工具方向卡，從公開用戶聲音和競品資料中找到值得再驗證的 AI 編程出海方向。','Browse curated overseas tool directions based on public user feedback and competitor material, then decide which AI tool ideas deserve further validation.'));
+    const head=document.querySelector('.page-head');if(!head)return;const eyebrow=head.querySelector('.eyebrow'),title=head.querySelector('h1'),lead=head.querySelector('.lead');if(eyebrow)eyebrow.textContent=t('方向庫 · 免費初步提示','OPPORTUNITY LIBRARY · FREE STARTING SIGNALS');if(title)title.textContent=t('海外小工具方向庫','Overseas Tool Opportunity Library');if(lead)lead.textContent=t('這裡整理了一批適合 AI 編程出海新手參考的海外小工具方向。免費版只提供簡明方向判斷，完整機會卡、MVP 任務書和多方向對比會在後續開放。','This library curates overseas tool directions for beginner AI builders going global. The free view offers brief direction signals; full opportunity cards, MVP task briefs, and multi-direction comparisons will open later.');
+    const decorate=()=>document.querySelectorAll('#results .card').forEach(card=>{const slug=new URL(card.href,location.href).searchParams.get('slug');const item=(window.PAINS||[]).find(p=>p.slug===slug);if(!item||card.querySelector('.direction-card-note'))return;const note=el('p',{className:'direction-card-note',text:t(`方向提示：${item.industry} · ${item.specific_task}。適合平台、常見變現與初步難度，請按採樣清單再確認。`,`Direction signal: ${item.industry} · ${item.specific_task}. Confirm platform fit, common monetization, and initial difficulty with further sampling.`)});card.querySelector('h3')?.after(note);const more=card.querySelector('.more');if(more)more.textContent=t('查看方向 →','View direction →');});
+    decorate();const results=document.querySelector('#results');if(results)new MutationObserver(decorate).observe(results,{childList:true});
   }
   function pain(){
-    document.title=document.title.replace('Overseas Pain Radar','Overseas Opportunity Radar');
-    const back=document.querySelector('.detail>a.eyebrow');if(back)back.textContent='← 返回案例庫';
-    const action=document.querySelector('.detail>a.button');if(action)action.textContent='我想分析這個方向';
+    setMeta(t('方向詳情｜海外機會雷達｜海外小工具機會','Opportunity Detail | Overseas Opportunity Radar | Overseas Tool Direction'),t('查看由公開用戶聲音和競品資料整理而成的海外小工具方向提示與原始證據。','Review an overseas tool direction signal and its original public evidence.'));
+    const back=document.querySelector('.detail>a.eyebrow');if(back)back.textContent=t('← 返回方向庫','← Back to Opportunity Library');const action=document.querySelector('.detail>a.button');if(action)action.textContent=t('開始分析這個方向','Analyze This Direction');
   }
   function method(){
-    document.title='使用方法｜海外機會雷達';
+    setMeta(t('使用方法｜海外機會雷達｜從方向庫到 MVP 驗證','How It Works | Overseas Opportunity Radar | From Direction Library to MVP Validation'),t('了解如何從海外小工具方向庫開始，收集公開評論與競品資料，完成一輪 MVP 驗證。','Learn how to start with the overseas tool opportunity library, collect public reviews and competitor material, and complete an MVP validation cycle.'));
     const main=document.querySelector('main.method');if(!main)return;
-    const intro=el('p',{className:'lead',text:'我們不是直接告訴你做什麼產品，而是幫你把海外評論、產品介紹和競品資料整理成可驗證的機會假設。'});
-    const flow=el('ol',{className:'v012-flow'});['找一個方向','收集幾條評論或產品資料','貼進「找機會」頁','查看簡明結論','再決定是否補資料、暫緩或放棄'].forEach(item=>flow.append(el('li',{text:item})));
-    const tips=list(['先用真實公開資料，不要只貼自己的想像。','資料越具體，AI 的整理越有參考價值。','看到結論後，仍要回到原始連結與真實用戶核對。','把它當成開始研究的工具，不是保證成功的答案。']);
-    main.replaceChildren(el('div',{className:'eyebrow',text:'HOW TO USE · START SIMPLE'}),el('h1',{text:'使用方法｜海外機會雷達'}),intro,el('h2',{text:'五步開始'}),flow,el('h2',{text:'使用時記住'}),tips);
+    const intro=el('p',{className:'lead',text:t('先從方向庫找一個有興趣的海外小工具方向，再用公開資料完成一輪可驗證的 MVP 假設。','Start with an overseas tool direction that interests you, then use public material to form a testable MVP hypothesis.')});
+    const flow=el('ol',{className:'v012-flow'});t(['先看方向庫｜從免費方向卡中找幾個有興趣的海外小工具方向。','按方向找資料｜到 App Store、Google Play、Shopify App Store、Chrome Web Store、Product Hunt 或競品網站找評論、產品介紹和價格資料。','貼到找機會頁｜把評論、產品介紹、價格資料或競品摘要貼進去。','查看簡明結論｜先看方向是否值得繼續、主要痛點和最小 MVP。','決定下一步｜繼續補資料、暫緩、放棄，或生成更完整的 MVP 任務書。'],['Explore the library first | Browse free direction cards and shortlist a few overseas tool ideas that interest you.','Collect evidence for a direction | Use App Store, Google Play, Shopify App Store, Chrome Web Store, Product Hunt, or competitor websites for reviews, descriptions, and pricing material.','Paste it into Find Opportunities | Add reviews, product descriptions, pricing notes, or a competitor summary.','Read the short conclusion | Start with whether the direction deserves more research, its key pain points, and the smallest MVP.','Choose the next step | Collect more evidence, pause, drop the idea, or create a fuller MVP task brief.']).forEach(item=>flow.append(el('li',{text:item})));
+    main.replaceChildren(el('div',{className:'eyebrow',text:'HOW IT WORKS · START WITH A DIRECTION'}),el('h1',{text:t('使用方法｜從方向庫到 MVP 驗證','How It Works | From Direction Library to MVP Validation')}),intro,el('h2',{text:t('五步開始','Five steps to start')}),flow);
   }
   function workbench(){
-    document.title='找機會｜海外機會雷達';
-    const main=document.querySelector('.work');if(!main)return;
-    const eyebrow=main.querySelector('.eyebrow');const title=main.querySelector('h1');const lead=main.querySelector('.lead');
-    if(eyebrow)eyebrow.textContent='FIND AN OPPORTUNITY · v0.1 BETA';
-    if(title)title.textContent='找機會｜海外機會雷達';
-    if(lead)lead.textContent='貼上海外 App 評論、產品介紹或競品資料，AI 會幫你整理：用戶在抱怨什麼、哪裡有機會、第一版產品該怎麼驗證。';
+    setMeta(t('找機會｜海外機會雷達｜分析方向與 MVP 驗證','Find Opportunities | Overseas Opportunity Radar | Analyze Directions and Validate MVPs'),t('把海外 App 評論、產品介紹、競品資料或榜單文字整理成機會卡、MVP 範圍與下一步驗證任務。','Turn overseas app reviews, product descriptions, competitor notes, or ranking snippets into opportunity cards, MVP scope, and next validation tasks.'));
+    const main=document.querySelector('.work');if(!main)return;const eyebrow=main.querySelector('.eyebrow'),title=main.querySelector('h1'),lead=main.querySelector('.lead');if(eyebrow)eyebrow.textContent=t('找機會 · 已有方向或資料','FIND OPPORTUNITIES · I HAVE A DIRECTION OR MATERIAL');if(title)title.textContent=t('找機會｜把方向整理成可驗證的機會卡','Find Opportunities | Turn a direction into a testable opportunity card');if(lead)lead.textContent=t('我已經有方向或資料，現在開始分析機會。貼上海外 App 評論、產品介紹、競品資料或榜單文字，AI 會幫你整理機會判斷與 MVP 驗證任務。','I already have a direction or source material. Paste overseas app reviews, product descriptions, competitor notes, or ranking snippets, and AI will organize an opportunity judgment and MVP validation tasks.');
+    const analyzer=main.querySelector('.external-analyzer');const oldForm=main.querySelector('.form');if(analyzer&&oldForm){const prompt=el('aside',{className:'notice v012-preflight'});prompt.append(el('h2',{text:t('還沒有資料？','Do not have source material yet?')}),el('p',{text:t('先去方向庫選一個方向，按採樣清單找 3 個競品和 10 條差評，再回來分析。','Start in the opportunity library. Pick one direction, collect three competitors and ten negative reviews, then return here to analyze.')}),link('radar.html',t('查看方向庫','View Opportunity Library'),'outline'));main.insertBefore(prompt,oldForm);main.insertBefore(analyzer,oldForm);}
   }
-  updateNav();
-  ({home,radar,pain,method,workbench}[page]||(()=>{}))();
+  updateNav();({home,radar,pain,method,workbench}[page]||(()=>{}))();
 })();
