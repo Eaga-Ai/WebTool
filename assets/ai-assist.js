@@ -4,20 +4,156 @@
   const ids=['audience','context','current','waste','test','where'];
   const form=document.querySelector('#form');
   if(!form)return;
+
   const actions=form.querySelector('.actions');
   const button=document.createElement('button');
   const result=document.createElement('section');
   const slug=new URLSearchParams(location.search).get('pain');
   const pain=window.PAINS?.find(item=>item.slug===slug);
-  button.type='button';button.className='button acid';button.id='ai-assist';button.textContent=t('AI 協助完善機會卡','AI Assist: Refine Opportunity Card');
-  result.className='opportunity';result.hidden=true;
-  actions.append(button);form.insertAdjacentElement('afterend',result);
-  const addList=(title,items)=>{
-    const heading=document.createElement('h3');heading.textContent=title;
-    const list=document.createElement('ul');
-    (Array.isArray(items)?items:[]).slice(0,4).forEach(item=>{const li=document.createElement('li');li.textContent=String(item);list.append(li);});
-    result.append(heading,list);
+
+  const create=(tag,{className='',text='',attrs={}}={})=>{
+    const node=document.createElement(tag);
+    if(className)node.className=className;
+    if(text)node.textContent=text;
+    Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,value));
+    return node;
   };
+  const asLines=value=>{
+    if(Array.isArray(value))return value.map(item=>String(item).trim()).filter(Boolean);
+    return String(value||'').split(/\n|[；;]/).map(item=>item.replace(/^[-•\d.\s]+/,'').trim()).filter(Boolean);
+  };
+  const addList=(container,title,items)=>{
+    const heading=create('h3',{text:title});
+    const list=create('ul');
+    const values=asLines(items);
+    (values.length?values:[t('暫時未有足夠資料，請回到原始來源補充。','Not enough material yet. Return to the original sources and add more evidence.')]).slice(0,4).forEach(item=>list.append(create('li',{text:item})));
+    container.append(heading,list);
+  };
+  const validationChecklist=()=>t([
+    '第 1 天：整理目前方向、目標用戶和核心假設。',
+    '第 2 天：找 3–5 個目標用戶或潛在客戶。',
+    '第 3 天：訪談他們目前怎樣處理這個問題。',
+    '第 4 天：確認問題發生頻率、損失和現有替代方案。',
+    '第 5 天：用表單、Notion、Google Sheet 或人工流程模擬最小方案。',
+    '第 6 天：讓 1–2 個用戶試用或看流程，收集回饋。',
+    '第 7 天：判斷是否繼續、暫緩或放棄，並決定是否生成 MVP 任務書。'
+  ],[
+    'Day 1: Clarify the direction, target user, and core hypothesis.',
+    'Day 2: Find 3–5 target users or potential customers.',
+    'Day 3: Interview them about how they currently handle the problem.',
+    'Day 4: Check frequency, cost, and existing alternatives.',
+    'Day 5: Simulate the smallest solution with a form, Notion, Google Sheet, or manual workflow.',
+    'Day 6: Let 1–2 users try or review the flow and collect feedback.',
+    'Day 7: Decide whether to continue, pause, or drop the idea, then generate an MVP task brief if needed.'
+  ]);
+  const copy=async(text)=>{
+    try{await navigator.clipboard.writeText(text);alert(t('已複製驗證清單。','Validation checklist copied.'));}
+    catch{alert(t('瀏覽器未允許自動複製，請手動複製文字。','Your browser did not allow automatic copying. Please copy the text manually.'));}
+  };
+  const buildTaskBrief=(answers,data)=>{
+    const direction=pain?(isEnglish?(pain.title_en||pain.title_zh):pain.title_zh):(answers.context||t('待確認方向','Direction to confirm'));
+    const target=answers.audience||t('待補充目標用戶','Target user to confirm');
+    const problem=answers.waste||pain?.pain_point||t('待補充核心問題','Core problem to confirm');
+    const alternative=answers.current||pain?.current_solution||t('待補充現有替代方案','Current alternatives to confirm');
+    const scope=[...asLines(answers.test),...asLines(data.questions)].filter(Boolean).slice(0,3);
+    while(scope.length<3)scope.push(t('以一個最小流程驗證核心假設。','Validate one core hypothesis with a minimal workflow.'));
+    return isEnglish?`# MVP Validation Task Brief
+
+## Direction
+${direction}
+
+## Target user
+${target}
+
+## Core problem
+${problem}
+
+## Current alternatives
+${alternative}
+
+## What the first MVP should include
+- ${scope[0]}
+- ${scope[1]}
+- ${scope[2]}
+
+## What to avoid in the first version
+- Do not build a full platform.
+- Do not build a complex membership system.
+- Do not over-automate before validation.
+- Do not build unvalidated features.
+
+## 7-day validation tasks
+${validationChecklist().map(item=>`- ${item}`).join('\n')}
+
+## Prompt for Codex / Trae
+Based on the direction above, create a minimal usable prototype. Focus on validating the core workflow, not building a full platform. First output the file structure, page flow, core features, data structure, and development steps. Avoid over-engineering.`:`# MVP 驗證任務書
+
+## 方向名稱
+${direction}
+
+## 目標用戶
+${target}
+
+## 核心問題
+${problem}
+
+## 現有替代方案
+${alternative}
+
+## 第一版 MVP 只做甚麼
+- ${scope[0]}
+- ${scope[1]}
+- ${scope[2]}
+
+## 第一版先不要做甚麼
+- 不做完整平台。
+- 不做複雜會員系統。
+- 不做過度自動化。
+- 不做沒有驗證過的功能。
+
+## 7 天驗證任務
+${validationChecklist().map(item=>`- ${item}`).join('\n')}
+
+## 交給 Codex / Trae 的開發提示
+請基於以上方向，建立一個最小可用原型。重點是驗證核心流程，不要做完整平台。請先輸出文件結構、頁面流程、核心功能、資料結構和開發步驟，不要過度設計。`;
+  };
+  const addNextSteps=(data,answers)=>{
+    const section=create('section',{className:'ai-next-steps'});
+    section.append(
+      create('h2',{text:t('下一步：先驗證，不急著開發','Next step: validate before building')}),
+      create('p',{className:'ai-next-lead',text:t('根據上面的資料缺口和風險提示，先完成小範圍驗證，再決定是否生成 MVP 任務書。','Use the gaps and risks above to run a small validation first, then decide whether to generate an MVP task brief.')})
+    );
+    const framework=create('div',{className:'ai-action-framework'});
+    [
+      [t('1. 補充資料','1. Fill the evidence gaps'),t('先確認用戶是否真的有這個問題、發生頻率有多高、目前怎樣解決，以及每次問題造成多少時間、金錢或機會損失。','Confirm whether users really have this problem, how often it happens, how they solve it today, and what time, money, or opportunity cost it creates.')],
+      [t('2. 做小驗證','2. Run a small validation'),t('找 3–5 個目標用戶或潛在客戶訪談，不要急著寫代碼。先用表單、Notion、Google Sheet、WhatsApp、Email 或人工流程模擬一次。','Talk to 3–5 target users before writing code. Simulate the workflow with a form, Notion, Google Sheet, WhatsApp, email, or a manual process.')],
+      [t('3. 再決定是否開發','3. Decide whether to build'),t('如果有明確重複痛點，並且有人願意試用、留下聯絡方式或表達付費意願，再生成 MVP 任務書交給 Codex / Trae。','If the pain point repeats and users are willing to try, leave contact information, or show payment intent, generate an MVP task brief for Codex or Trae.')]
+    ].forEach(([heading,body])=>{const card=create('article',{className:'ai-action-card'});card.append(create('h3',{text:heading}),create('p',{text:body}));framework.append(card);});
+    const checklist=create('div',{className:'ai-validation-checklist'});
+    checklist.append(create('h3',{text:t('7 天驗證清單','7-day validation checklist')}));
+    const list=create('ol');validationChecklist().forEach(item=>list.append(create('li',{text:item})));checklist.append(list);
+    const buttons=create('div',{className:'ai-next-actions'});
+    const copyChecklist=create('button',{className:'outline',text:t('複製驗證清單','Copy Validation Checklist'),attrs:{type:'button'}});
+    const generateTask=create('button',{className:'button acid',text:t('生成 MVP 任務書','Generate MVP Task Brief'),attrs:{type:'button'}});
+    const saveCard=create('button',{className:'outline',text:t('保存機會卡','Save Opportunity Card'),attrs:{type:'button'}});
+    buttons.append(copyChecklist,generateTask,saveCard);
+    const taskOutput=create('section',{className:'ai-task-output'});taskOutput.hidden=true;
+    const taskLabel=create('label',{text:t('MVP 任務書，可編輯','MVP task brief, editable')});
+    const taskText=create('textarea',{attrs:{rows:'18','aria-label':t('MVP 任務書','MVP task brief')}});taskLabel.append(taskText);
+    const copyTask=create('button',{className:'outline',text:t('複製 MVP 任務書','Copy MVP Task Brief'),attrs:{type:'button'}});
+    taskOutput.append(taskLabel,copyTask,create('p',{className:'ai-advanced-note',text:t('完整機會卡、多方向對比和更詳細的 Codex / Trae 任務書，後續會作為深度分析功能開放。','Full opportunity cards, multi-direction comparisons, and deeper Codex / Trae task briefs will be available later as advanced analysis features.')}));
+    copyChecklist.addEventListener('click',()=>copy(`# ${t('7 天驗證清單','7-day validation checklist')}\n\n${validationChecklist().join('\n')}`));
+    generateTask.addEventListener('click',()=>{taskText.value=buildTaskBrief(answers,data);taskOutput.hidden=false;taskOutput.scrollIntoView({behavior:'smooth',block:'nearest'});});
+    copyTask.addEventListener('click',()=>copy(taskText.value));
+    saveCard.addEventListener('click',()=>{if(typeof form.requestSubmit==='function')form.requestSubmit();else form.querySelector('[type="submit"]')?.click();});
+    section.append(framework,checklist,buttons,taskOutput);
+    result.append(section);
+  };
+
+  button.type='button';button.className='button acid';button.id='ai-assist';button.textContent=t('AI 協助完善機會卡','AI Assist: Refine Opportunity Card');
+  result.className='opportunity ai-assisted-result';result.hidden=true;
+  actions.append(button);form.insertAdjacentElement('afterend',result);
+
   button.onclick=async()=>{
     const answers=Object.fromEntries(ids.map(id=>[id,document.querySelector('#'+id)?.value.trim()||'']));
     if(Object.values(answers).filter(Boolean).length<2)return alert(t('請先至少填寫兩項，再讓 AI 協助整理。','Complete at least two fields before asking AI to organize them.'));
@@ -27,10 +163,11 @@
       const data=await response.json();
       if(!response.ok)throw Error(data.error||t('暫時無法完成整理','Unable to complete the review right now.'));
       result.replaceChildren();
-      const eyebrow=document.createElement('div');eyebrow.className='eyebrow';eyebrow.style.color='#d7fa58';eyebrow.textContent='AI ASSISTED REVIEW';
-      const heading=document.createElement('h2');heading.textContent=t('這個方向的待驗證重點','What still needs validation for this direction');
-      const notice=document.createElement('p');notice.className='notice';notice.textContent=t('AI 只協助澄清資料、識別風險與提出驗證問題，不代表機會已成立。','AI only helps clarify material, identify risks, and suggest validation questions. It does not prove that an opportunity exists.');
-      result.append(eyebrow,heading);addList(t('需要補充','What to add'),data.gaps);addList(t('需要留意','What to watch'),data.risks);addList(t('下一步驗證','Next validation steps'),data.questions);result.append(notice);
+      const review=create('section',{className:'ai-review-summary'});
+      review.append(create('div',{className:'eyebrow',text:'AI ASSISTED REVIEW'}),create('h2',{text:t('這個方向的待驗證重點','What still needs validation for this direction')}));
+      addList(review,t('需要補充','What to add'),data.gaps);addList(review,t('需要留意','What to watch'),data.risks);addList(review,t('下一步驗證','Next validation steps'),data.questions);
+      review.append(create('p',{className:'notice',text:t('AI 只協助澄清資料、識別風險與提出驗證問題，不代表機會已成立。','AI only helps clarify material, identify risks, and suggest validation questions. It does not prove that an opportunity exists.')}));
+      result.append(review);addNextSteps(data,answers);
       result.hidden=false;result.scrollIntoView({behavior:'smooth',block:'nearest'});
     }catch(error){alert(error.message||t('暫時無法完成整理，請稍後再試。','Unable to complete the review right now. Please try again later.'));}
     finally{button.disabled=false;button.textContent=t('AI 協助完善機會卡','AI Assist: Refine Opportunity Card');}
