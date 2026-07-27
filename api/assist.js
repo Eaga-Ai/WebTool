@@ -19,7 +19,9 @@ const externalAnalysisPrompt=`你是「海外機會雷達」的證據研究助�
   "compliance_risks":["最多4条"],
   "mvp_scope":["最多5条，范围小且可验证"],
   "avoid_first_version":["最多5条"],
-  "mvp_validation_task":["目标","7天内步骤","要找的首批用户","成功/失败信号"],
+ "mvp_validation_task":["目标","7天内步骤","要找的首批用户","成功/失败信号"],
+  "opportunity_recommendation":"推荐继续研究／暂缓／不建议；资料不足时必须写暂缓",
+  "evidence_status":"资料较充分／资料不足，只能作初步观察／需要补充真实样本",
   "opportunity_score":1,
   "opportunity_score_reason":"评分只反映当前资料的证据强度、重复度、替代方案与可验证性，不代表市场结论"
 }`;
@@ -30,14 +32,35 @@ function extractJson(content){
   return JSON.parse(match[0]);
 }
 
-function asList(value){
-  if(Array.isArray(value))return value.map(item=>String(item||'').trim()).filter(Boolean).slice(0,5);
-  return value? [String(value).trim()] : ['输入资料未提供／无法判断'];
+function formatValue(value){
+  if(value===null||value===undefined||value==='')return '';
+  if(Array.isArray(value))return value.map(formatValue).filter(Boolean).join('；');
+  if(typeof value==='object')return Object.entries(value).map(([key,item])=>`${key}：${formatValue(item)}`).filter(Boolean).join('；');
+  return String(value).trim();
 }
 
-function normalizeExternalResult(result){
+function asList(value){
+  if(Array.isArray(value))return value.map(formatValue).filter(Boolean).slice(0,5);
+  if(value&&typeof value==='object')return Object.entries(value).map(([key,item])=>`${key}：${formatValue(item)}`).filter(Boolean).slice(0,5);
+  return value? [formatValue(value)] : ['输入资料未提供／无法判断'];
+}
+
+function normalizeExternalResult(result,research={}){
   const listKeys=['representative_competitors','repeated_pain_points','positive_insights','negative_insights','feature_requests','pricing_complaints','current_alternatives','ai_entry_points','validation_hypotheses','compliance_risks','mvp_scope','avoid_first_version','mvp_validation_task'];
-  const normalized={source_summary:String(result.source_summary||'输入资料未提供／无法判断'),opportunity_score:Math.max(1,Math.min(100,Number.parseInt(result.opportunity_score,10)||1)),opportunity_score_reason:String(result.opportunity_score_reason||'评分只反映当前输入资料的研究优先级。')};
+  const recordCount=Math.max(0,Number.parseInt(research.record_count,10)||0);
+  const hasReviewSignal=Boolean(research.has_review_signal);
+  const evidenceStatus=result.evidence_status||(
+    recordCount>0&&recordCount<5?'资料不足，只能作初步观察':
+    !hasReviewSignal&&!String(research.competitor_names||'').trim()?'需要补充真实样本':
+    '请核对输入资料范围后再作判断'
+  );
+  const normalized={
+    source_summary:formatValue(result.source_summary)||'输入资料未提供／无法判断',
+    opportunity_score:Math.max(1,Math.min(100,Number.parseInt(result.opportunity_score,10)||1)),
+    opportunity_score_reason:formatValue(result.opportunity_score_reason)||'评分只反映当前输入资料的研究优先级。',
+    opportunity_recommendation:formatValue(result.opportunity_recommendation)||'暂缓：请先补充可核验的真实样本。',
+    evidence_status:formatValue(evidenceStatus)
+  };
   listKeys.forEach(key=>{normalized[key]=asList(result[key]);});
   return normalized;
 }
@@ -68,8 +91,9 @@ export default async function handler(req,res){
       if(!research?.research_direction?.trim())return res.status(400).json({error:'缺少研究方向'});
       if(rawContent.length<40)return res.status(400).json({error:'请提供足够的原始资料后再分析'});
       if(rawContent.length>24000)return res.status(413).json({error:'原始资料过长，请缩短至 24,000 字符以内'});
-      const result=await askModel({prompt:externalAnalysisPrompt,input:{research_direction:String(research.research_direction).slice(0,300),target_platform:String(research.target_platform||'Other').slice(0,100),target_market:String(research.target_market||'Global').slice(0,100),source_type:String(research.source_type||'Mixed').slice(0,100),competitor_names:String(research.competitor_names||'').slice(0,1200),raw_content:rawContent},maxTokens:2600});
-      return res.status(200).json(normalizeExternalResult(result));
+      const normalizedResearch={research_direction:String(research.research_direction).slice(0,300),target_platform:String(research.target_platform||'Auto / Mixed').slice(0,100),target_market:String(research.target_market||'Global').slice(0,100),source_type:String(research.source_type||'Mixed').slice(0,100),competitor_names:String(research.competitor_names||'').slice(0,1200),raw_content:rawContent,record_count:Math.max(0,Math.min(10000,Number.parseInt(research.record_count,10)||0)),has_review_signal:Boolean(research.has_review_signal)};
+      const result=await askModel({prompt:externalAnalysisPrompt,input:normalizedResearch,maxTokens:2600});
+      return res.status(200).json(normalizeExternalResult(result,normalizedResearch));
     }
     const answers=req.body?.answers;
     const pain=req.body?.pain;
