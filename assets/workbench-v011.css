@@ -1,0 +1,37 @@
+/* v0.1.1：只作用於外部資料分析工作台，避免改動既有全站樣式。 */
+.external-analyzer{margin-top:28px;color:#16342f}
+.external-analyzer .analyzer-lead{max-width:720px;color:#294841;font-size:16px;line-height:1.75}
+.external-analyzer .analysis-hint{margin:14px 0 22px;padding:12px 14px;border-left:4px solid #a9cf37;background:#f3f7e8;color:#244137;line-height:1.65}
+.external-analyzer .beginner-step{margin:16px 0;padding:18px;border:1px solid #cedbd4;border-radius:14px;background:#fff;box-shadow:0 6px 18px rgba(22,52,47,.05)}
+.external-analyzer .step-kicker{margin:0 0 6px;color:#0f6657;font-size:12px;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.external-analyzer .beginner-step label,.external-analyzer .advanced-options label{display:grid;gap:8px;color:#132e29;font-weight:750;line-height:1.45}
+.external-analyzer .beginner-step input,.external-analyzer .beginner-step textarea,.external-analyzer .advanced-options input,.external-analyzer .advanced-options select{width:100%;box-sizing:border-box;border:1px solid #aebfb8;border-radius:9px;background:#fff;color:#102923;font:inherit;line-height:1.65;padding:11px 12px}
+.external-analyzer .beginner-step textarea{min-height:190px;resize:vertical}
+.external-analyzer .primary-analysis-action{margin-top:14px;background:#c9ff3b!important;color:#132c26!important;border-color:#c9ff3b!important;font-weight:800;box-shadow:0 8px 18px rgba(120,160,0,.2)}
+.external-analyzer .advanced-options{margin:20px 0;padding:0 16px 16px;border:1px solid #c8d5cf;border-radius:12px;background:#f8faf7}
+.external-analyzer .advanced-options summary{padding:15px 0;cursor:pointer;color:#17483e;font-weight:800}
+.external-analyzer .advanced-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.external-analyzer .advanced-grid label:last-child{grid-column:1/-1}
+.external-analyzer .import-row{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:16px;color:#16342f}
+.external-analyzer .import-status{font-size:14px;color:#31524a}
+.external-result{margin-top:28px;padding:24px;background:#123f37;color:#f8fcf3;border-radius:16px}
+.external-result h2,.external-result h3,.external-result h4{color:#fff}
+.external-result .analysis-summary{padding:20px;border-radius:12px;background:#fff;color:#16342f}
+.external-result .analysis-summary h3{margin-top:0;color:#123f37}
+.external-result .analysis-score{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;margin:14px 0;padding:14px;border:1px solid #c6d7a0;border-radius:12px;background:#f4f8e7}
+.external-result .score-number{font-size:32px;font-weight:900;line-height:1;color:#295b31}
+.external-result .score-reason,.external-result .evidence-status{margin:8px 0 0;color:#355049;line-height:1.65}
+.external-result .evidence-status{font-weight:700;color:#83551e}
+.external-result .analysis-summary-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.external-result .summary-block{padding:14px;border:1px solid #d7e1db;border-radius:10px;background:#fbfcfa}
+.external-result .summary-block h4{margin:0 0 8px;color:#123f37;font-size:15px}
+.external-result .summary-block ul,.external-result .analysis-card ul{margin:0;padding-left:20px;line-height:1.72}
+.external-result .full-analysis-heading{margin:30px 0 12px;color:#fff}
+.external-result .analysis-card{margin:12px 0;padding:16px;border:1px solid rgba(255,255,255,.24);border-radius:11px;background:rgba(255,255,255,.07);color:#f7fbf5}
+.external-result .analysis-card h4{margin:0 0 10px;color:#d7ff74;font-size:15px}
+.external-result .analysis-card p{margin:0;line-height:1.75;white-space:pre-wrap}
+.external-result .analysis-editor{display:grid;gap:12px;margin-top:20px;padding:18px;border-radius:12px;background:#fff;color:#16342f}
+.external-result .analysis-editor label{display:grid;gap:7px;color:#17352f;font-weight:800}
+.external-result .analysis-editor textarea{min-height:90px;box-sizing:border-box;border:1px solid #aebfb8;border-radius:9px;color:#102923;font:inherit;line-height:1.7;padding:10px 12px;resize:vertical}
+.external-result .analysis-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+@media (max-width:680px){.external-analyzer .advanced-grid,.external-result .analysis-summary-grid{grid-template-columns:1fr}.external-result{padding:16px}.external-result .analysis-score{grid-template-columns:1fr}.external-analyzer .beginner-step{padding:14px}}
