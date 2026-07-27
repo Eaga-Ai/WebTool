@@ -123,11 +123,8 @@
   advanced.append(advancedGrid);form.append(advanced);
   const actions=el('div',{className:'actions beginner-actions'});
   const analyze=el('button',{className:'button acid',text:'開始分析機會',attrs:{type:'submit'}});
-  const copy=el('button',{className:'outline',text:'複製分析 Markdown',attrs:{type:'button'}});
-  const download=el('button',{className:'outline',text:'下載分析 Markdown',attrs:{type:'button'}});
-  copy.disabled=true;download.disabled=true;
   const thirdStep=step(3,'點擊分析','AI 只整理本次輸入資料，請把結果當作研究起點。',actions);
-  actions.append(analyze,copy,download);form.append(thirdStep);section.append(form);
+  actions.append(analyze);form.append(thirdStep);section.append(form);
   const result=el('section',{className:'external-result'});result.hidden=true;section.append(result);main.append(section);
 
   function field(labelText,key,value,rows=3){
@@ -161,13 +158,29 @@
     simple.append(el('p',{className:'evidence-status',text:status}));
     const summaryGrid=el('div',{className:'analysis-summary-grid'});
     summaryGrid.append(summaryList('主要痛點',data.repeated_pain_points),summaryList('可切入方向',data.ai_entry_points,1),summaryList('最小 MVP',data.mvp_scope),summaryList('下一步驗證',data.mvp_validation_task,3));
-    simple.append(summaryGrid);result.append(simple);
-    result.append(el('h2',{className:'full-analysis-title',text:'完整分析，可編輯'}),el('p',{className:'notice',text:'以下內容僅依據本次導入資料整理。修改後可複製或下載；請繼續核對原連結與實際市場情況。'}));
+    simple.append(summaryGrid);
+    const summaryActions=el('div',{className:'summary-actions'});
+    const copySummary=el('button',{className:'outline',text:'複製分析結果',attrs:{type:'button'}});
+    const downloadFull=el('button',{className:'outline',text:'下載完整報告',attrs:{type:'button'}});
+    const toggleFull=el('button',{className:'outline',text:'展開完整分析',attrs:{type:'button','aria-expanded':'false'}});
+    summaryActions.append(copySummary,downloadFull,toggleFull);simple.append(summaryActions);result.append(simple);
+    const fullPanel=el('section',{className:'full-analysis-details'});fullPanel.hidden=true;
+    fullPanel.append(el('h2',{className:'full-analysis-title',text:'完整分析，可編輯'}),el('p',{className:'notice',text:'這是進階詳情。你可以修改後再下載完整報告；請繼續核對原連結與實際市場情況。'}));
     const editor=el('div',{className:'analysis-editor'});
     [
       ['資料摘要與來源類型','source_summary'],['代表競品','representative_competitors'],['重複出現的用戶痛點','repeated_pain_points'],['好評洞察','positive_insights'],['差評洞察','negative_insights'],['功能請求','feature_requests'],['價格／訂閱抱怨','pricing_complaints'],['現有替代方案','current_alternatives'],['AI 可切入點','ai_entry_points'],['待驗證假設','validation_hypotheses'],['合規或平台風險','compliance_risks'],['MVP 範圍建議','mvp_scope'],['不建議第一版做什麼','avoid_first_version'],['MVP 驗證任務書','mvp_validation_task']
     ].forEach(([title,key])=>editor.append(field(title,key,data[key],key==='mvp_validation_task'?6:3)));
-    result.append(editor);result.hidden=false;copy.disabled=false;download.disabled=false;result.scrollIntoView({behavior:'smooth',block:'start'});
+    fullPanel.append(editor);result.append(fullPanel);result.hidden=false;
+    copySummary.addEventListener('click',()=>copyMarkdown(summaryMarkdown(data)));
+    downloadFull.addEventListener('click',()=>downloadMarkdown(markdown()));
+    toggleFull.addEventListener('click',()=>{fullPanel.hidden=!fullPanel.hidden;const isOpen=!fullPanel.hidden;toggleFull.textContent=isOpen?'收起完整分析':'展開完整分析';toggleFull.setAttribute('aria-expanded',String(isOpen));if(isOpen)fullPanel.scrollIntoView({behavior:'smooth',block:'start'});});
+    result.scrollIntoView({behavior:'smooth',block:'start'});
+  }
+  function summaryMarkdown(data){
+    const research=`研究方向：${direction.value.trim()||'—'}\n目標平台：${platform.value}\n目標市場：${market.value}`;
+    const recommendation=chooseRecommendation(data);
+    const sections=[['主要痛點',data.repeated_pain_points],['可切入方向',data.ai_entry_points],['最小 MVP',data.mvp_scope],['下一步驗證',data.mvp_validation_task]];
+    return `# 海外機會雷達｜簡明結論\n\n${research}\n\n## 機會判斷\n${recommendation}\n\n## 機會評分\n${Math.min(100,Math.max(1,Number(data.opportunity_score)||1))} / 100\n\n## 評分理由\n${formatAnalysisValue(data.opportunity_score_reason)}\n\n${sections.map(([title,value])=>`## ${title}\n${formatAnalysisValue(value)}`).join('\n\n')}\n\n> 本分析僅基於本次導入資料整理，不代表市場結論、投資建議或產品承諾。`;
   }
   function markdown(){
     const values=Object.fromEntries([...result.querySelectorAll('[data-analysis-key]')].map(input=>[input.dataset.analysisKey,input.value.trim()]));
@@ -192,7 +205,7 @@
   form.addEventListener('submit',async event=>{
     event.preventDefault();const content=rawContent.value.trim();
     if(!direction.value.trim())return alert('請先填寫研究方向。');
-    if(content.length<40)return alert('請至少貼上一段可供分析的原始資料。');
+    if(content.length<40)return alert('資料太少啦。請至少貼 3–5 條 App 評論、產品介紹或競品資料，AI 才能幫你分析機會。');
     analyze.disabled=true;analyze.textContent='正在分析…';
     const hasReviewSignal=/review|rating|評論|差評|評分/i.test(content);
     try{
@@ -201,5 +214,4 @@
     }catch(error){alert(error.message||'暫時無法完成分析，請稍後再試。');}
     finally{analyze.disabled=false;analyze.textContent='開始分析機會';}
   });
-  copy.addEventListener('click',()=>copyMarkdown(markdown()));download.addEventListener('click',()=>downloadMarkdown(markdown()));
 })();
