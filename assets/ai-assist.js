@@ -25,6 +25,7 @@
   const result=document.createElement('section');
   const slug=new URLSearchParams(location.search).get('pain');
   const pain=window.PAINS?.find(item=>item.slug===slug);
+  const painValue=key=>pain?(isEnglish?(pain[`${key}_en`]||pain[key]||''):(pain[`${key}_zh`]||pain[key]||'')):'';
 
   const create=(tag,{className='',text='',attrs={}}={})=>{
     const node=document.createElement(tag);
@@ -66,10 +67,10 @@
     catch{alert(t('瀏覽器未允許自動複製，請手動複製文字。','Your browser did not allow automatic copying. Please copy the text manually.'));}
   };
   const buildTaskBrief=(answers,data)=>{
-    const direction=outputText(pain?(isEnglish?(pain.title_en||pain.title_zh):pain.title_zh):(answers.context||t('待確認方向','Direction to confirm')),'direction');
+    const direction=outputText(pain?painValue('title'):(answers.context||t('待確認方向','Direction to confirm')),'direction');
     const target=outputText(answers.audience||t('待補充目標用戶','Target user to confirm'),'target user');
-    const problem=outputText(answers.waste||pain?.pain_point||t('待補充核心問題','Core problem to confirm'),'core problem');
-    const alternative=outputText(answers.current||pain?.current_solution||t('待補充現有替代方案','Current alternatives to confirm'),'current alternative');
+    const problem=outputText(answers.waste||painValue('pain_point')||t('待補充核心問題','Core problem to confirm'),'core problem');
+    const alternative=outputText(answers.current||painValue('current_solution')||t('待補充現有替代方案','Current alternatives to confirm'),'current alternative');
     const scope=[...asLines(answers.test,'MVP validation step'),...asLines(data.questions,'MVP validation step')].filter(Boolean).slice(0,3);
     while(scope.length<3)scope.push(t('以一個最小流程驗證核心假設。','Validate one core hypothesis with a minimal workflow.'));
     return isEnglish?`# MVP Validation Task Brief
@@ -175,7 +176,7 @@ ${validationChecklist().map(item=>`- ${item}`).join('\n')}
     if(Object.values(answers).filter(Boolean).length<2)return alert(t('請先至少填寫兩項，再讓 AI 協助整理。','Complete at least two fields before asking AI to organize them.'));
     button.disabled=true;button.textContent=t('正在整理…','Organizing…');
     try{
-      const response=await fetch('/api/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answers:{...answers,language_instruction:languageInstruction},pain:pain?{title:pain.title_zh,industry:pain.industry,pain_type:pain.pain_type,specific_task:pain.specific_task,pain_point:pain.pain_point}:null})});
+      const response=await fetch('/api/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answers:{...answers,language_instruction:languageInstruction},pain:pain?{title:painValue('title'),industry:painValue('industry'),pain_type:painValue('pain_type'),specific_task:painValue('specific_task'),pain_point:painValue('pain_point')}:null})});
       const data=await response.json();
       if(!response.ok)throw Error(data.error||t('暫時無法完成整理','Unable to complete the review right now.'));
       result.replaceChildren();

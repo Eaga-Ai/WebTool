@@ -8,6 +8,9 @@
   const requestedLanguage=new URLSearchParams(location.search).get('lang');
   const isEnglish=!['zh','zh-HK','zh-hk','zh-Hant','zh-hant'].includes(requestedLanguage);
   const t=(zh,en)=>isEnglish?en:zh;
+  const languageInstruction=isEnglish
+    ?'Return the entire response in English only. If source material is Chinese, translate and summarize it into natural English. Do not mix Chinese in headings, bullet points, analysis, validation questions, opportunity card fields, or MVP task brief content.'
+    :'請用香港繁體中文輸出全部內容。不要使用簡體中文。除 SaaS、MVP、Codex、Trae、Shopify、Reddit 等專有名詞外，不要中英混雜。';
   const traditionalMap={'户':'戶','馈':'饋','个':'個','团':'團','队':'隊','无':'無','优':'優','么':'麼','话':'話','邮':'郵','周':'週','时':'時','请':'請','见':'見','业':'業','设':'設','计':'計','务':'務','开':'開','进':'進','预':'預','账':'帳','态':'態','复':'複','踪':'蹤','动':'動','现':'現','会':'會','录':'錄','难':'難','发':'發','来':'來','过':'過','为':'為','体':'體','专':'專','经':'經','济':'濟','医':'醫','疗':'療','门':'門','约':'約','档':'檔','归':'歸','报':'報','结':'結','构':'構','样':'樣','标':'標','签':'籤','页':'頁','据':'據','资':'資','讯':'訊','网':'網','风':'風','险':'險','议':'議','证':'證','实':'實','际':'際','关':'關','键':'鍵','级':'級','别':'別','载':'載','释':'釋','点':'點','达':'達','场':'場','库':'庫','创':'創','广':'廣','转':'轉','换':'換','营':'營','销':'銷','审':'審','题':'題','简':'簡','单':'單','内':'內','书':'書','测':'測','试':'試','验':'驗','变':'變','与':'與','应':'應','该':'該','从':'從','后':'後','台':'臺','获':'獲','联':'聯','络':'絡','费':'費','钱':'錢','损':'損','失':'失','买':'買','卖':'賣','识':'識','读':'讀','写':'寫','输':'輸','出':'出','处':'處','理':'理','评':'評','价':'價','统':'統','学':'學','习':'習','历':'歷','这':'這','对':'對','杂':'雜','问':'問','补':'補','续':'續','暂':'暫','缓':'緩','导':'導','还':'還','没':'沒','软':'軟','击':'擊','链':'鏈','组':'組','织':'織','线':'線','类':'類','选':'選','择':'擇','节':'節','扩':'擴','张':'張','势':'勢','劣':'劣','滤':'濾','显':'顯','准':'準','备':'備','观':'觀','察':'察','认':'認','听':'聽','说':'說','语':'語','义':'義','译':'譯','满':'滿','仅':'僅','须':'須','并':'並','带':'帶','给':'給','让':'讓','帮':'幫'};
   const toTraditional=value=>String(value??'').replace(/[\u3400-\u9fff]/g,char=>traditionalMap[char]||char);
   const hasChinese=value=>/[\u3400-\u9fff]/.test(String(value??''));
@@ -224,7 +227,8 @@
     analyze.disabled=true;analyze.textContent=t('正在分析…','Analyzing…');
     const hasReviewSignal=/review|rating|評論|差評|評分/i.test(content);
     try{
-      const response=await fetch('/api/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'external_source_analysis',research:{research_direction:direction.value.trim(),target_platform:platform.value,target_market:market.value,source_type:sourceType.value,competitor_names:competitors.value.trim(),raw_content:content,record_count:importedRecordCount,has_review_signal:hasReviewSignal}})});
+      const analysisContent=`[OUTPUT LANGUAGE INSTRUCTION]\n${languageInstruction}\n[END OUTPUT LANGUAGE INSTRUCTION]\n\n${content}`;
+      const response=await fetch('/api/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mode:'external_source_analysis',research:{research_direction:direction.value.trim(),target_platform:platform.value,target_market:market.value,source_type:sourceType.value,competitor_names:competitors.value.trim(),raw_content:analysisContent,record_count:importedRecordCount,has_review_signal:hasReviewSignal}})});
       const data=await response.json();if(!response.ok)throw Error(data.error||t('暫時無法完成分析','Analysis is temporarily unavailable'));renderResult(data);
     }catch(error){alert(error.message||t('暫時無法完成分析，請稍後再試。','Analysis is temporarily unavailable. Please try again later.'));}
     finally{analyze.disabled=false;analyze.textContent=t('開始找機會','Start Finding Opportunities');}
