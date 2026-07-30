@@ -5,7 +5,8 @@
   const MAX_RAW_CHARS=24000;
   const main=document.querySelector('main.work');
   if(!main)return;
-  const isEnglish=new URLSearchParams(location.search).get('lang')==='en';
+  const requestedLanguage=new URLSearchParams(location.search).get('lang');
+  const isEnglish=!['zh','zh-HK','zh-hk','zh-Hant','zh-hant'].includes(requestedLanguage);
   const t=(zh,en)=>isEnglish?en:zh;
 
   const el=(tag,options={})=>{
@@ -172,7 +173,10 @@
     [
       [t('資料摘要與來源類型','Source summary and type'),'source_summary'],[t('代表競品','Representative competitors'),'representative_competitors'],[t('重複出現的用戶痛點','Repeated user pain points'),'repeated_pain_points'],[t('好評洞察','Positive insights'),'positive_insights'],[t('差評洞察','Negative insights'),'negative_insights'],[t('功能請求','Feature requests'),'feature_requests'],[t('價格／訂閱抱怨','Pricing or subscription complaints'),'pricing_complaints'],[t('現有替代方案','Current alternatives'),'current_alternatives'],[t('AI 可切入點','AI entry points'),'ai_entry_points'],[t('待驗證假設','Validation hypotheses'),'validation_hypotheses'],[t('合規或平台風險','Compliance or platform risks'),'compliance_risks'],[t('MVP 範圍建議','MVP scope suggestions'),'mvp_scope'],[t('不建議第一版做什麼','What to avoid in v1'),'avoid_first_version'],[t('MVP 驗證任務書','MVP validation task brief'),'mvp_validation_task']
     ].forEach(([title,key])=>editor.append(field(title,key,data[key],key==='mvp_validation_task'?6:3)));
-    fullPanel.append(editor);result.append(fullPanel);result.hidden=false;
+    fullPanel.append(editor);result.append(fullPanel);
+    const demoPack=el('section',{className:'demo-pack-result'});
+    demoPack.append(el('h2',{text:t('需要完整 MVP 任務書？','Want a full MVP task brief?')}),el('p',{text:t('這次 demo 已生成基礎 MVP 任務書。如需更完整的報告與 Codex / Trae 可用任務簡報，可解鎖 Demo Pack。','This demo generated a basic MVP brief. For a polished report and Codex / Trae-ready task brief, unlock the Demo Pack.')}),el('a',{className:'button acid',text:t('解鎖 Demo Pack','Unlock Demo Pack'),attrs:{href:window.getDemoPaymentUrl?.(isEnglish?'en':'zh-HK')||`success.html?demo=1&lang=${isEnglish?'en':'zh-HK'}`}}));
+    result.append(demoPack);result.hidden=false;
     copySummary.addEventListener('click',()=>copyMarkdown(summaryMarkdown(data)));
     downloadFull.addEventListener('click',()=>downloadMarkdown(markdown()));
     toggleFull.addEventListener('click',()=>{fullPanel.hidden=!fullPanel.hidden;const isOpen=!fullPanel.hidden;toggleFull.textContent=isOpen?t('收起完整分析','Collapse Full Analysis'):t('展開完整分析','Expand Full Analysis');toggleFull.setAttribute('aria-expanded',String(isOpen));if(isOpen)fullPanel.scrollIntoView({behavior:'smooth',block:'start'});});

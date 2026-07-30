@@ -1,5 +1,6 @@
 (()=>{
-  const isEnglish=new URLSearchParams(location.search).get('lang')==='en';
+  const requestedLanguage=new URLSearchParams(location.search).get('lang');
+  const isEnglish=!['zh','zh-HK','zh-hk','zh-Hant','zh-hant'].includes(requestedLanguage);
   const t=(zh,en)=>isEnglish?en:zh;
   const ids=['audience','context','current','waste','test','where'];
   const form=document.querySelector('#form');
@@ -141,7 +142,8 @@ ${validationChecklist().map(item=>`- ${item}`).join('\n')}
     const taskLabel=create('label',{text:t('MVP 任務書，可編輯','MVP task brief, editable')});
     const taskText=create('textarea',{attrs:{rows:'18','aria-label':t('MVP 任務書','MVP task brief')}});taskLabel.append(taskText);
     const copyTask=create('button',{className:'outline',text:t('複製 MVP 任務書','Copy MVP Task Brief'),attrs:{type:'button'}});
-    taskOutput.append(taskLabel,copyTask,create('p',{className:'ai-advanced-note',text:t('完整機會卡、多方向對比和更詳細的 Codex / Trae 任務書，後續會作為深度分析功能開放。','Full opportunity cards, multi-direction comparisons, and deeper Codex / Trae task briefs will be available later as advanced analysis features.')}));
+    const demoPackLink=create('a',{className:'button acid',text:t('解鎖 Demo Pack','Unlock Demo Pack'),attrs:{href:window.getDemoPaymentUrl?.(isEnglish?'en':'zh-HK')||`success.html?demo=1&lang=${isEnglish?'en':'zh-HK'}`}});
+    taskOutput.append(taskLabel,copyTask,create('p',{className:'ai-advanced-note',text:t('這次 demo 已生成基礎 MVP 任務書。如需更完整的報告與 Codex / Trae 可用任務簡報，可解鎖 Demo Pack。','This demo generated a basic MVP brief. For a polished report and Codex / Trae-ready task brief, unlock the Demo Pack.')}),demoPackLink);
     copyChecklist.addEventListener('click',()=>copy(`# ${t('7 天驗證清單','7-day validation checklist')}\n\n${validationChecklist().join('\n')}`));
     generateTask.addEventListener('click',()=>{taskText.value=buildTaskBrief(answers,data);taskOutput.hidden=false;taskOutput.scrollIntoView({behavior:'smooth',block:'nearest'});});
     copyTask.addEventListener('click',()=>copy(taskText.value));

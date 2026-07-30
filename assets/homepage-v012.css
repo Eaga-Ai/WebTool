@@ -2,6 +2,7 @@
 .v012-title span,
 .v012-title strong{display:block}
 .v012-title strong{margin-top:.2em;font-size:clamp(1.45rem,3vw,2.45rem);line-height:1.18;color:#164b43;font-weight:760;letter-spacing:-.035em}
+.v012-demo-pack,.v012-success-card{max-width:980px;margin:34px auto;padding:30px;border:1px solid #c8d5cf;border-radius:16px;background:#f4fbf7;color:#17352f}.v012-demo-pack h2,.v012-success-card h1{margin:8px 0;color:#123f37}.v012-demo-pack p,.v012-success-card p{max-width:760px;color:#486058;line-height:1.72}.v012-demo-pack .button,.v012-success-card .button{display:inline-flex;margin-top:8px}
 /* All homepage sections use the same centred content edge. */
 .v012-section{width:min(100%,1180px)!important;margin-inline:auto!important;padding-inline:24px!important}.v012-grid{width:100%}.v012-two{max-width:none!important;margin:0!important;padding:0!important}.v012-card,.v012-card p,.v012-list li{min-width:0;overflow-wrap:anywhere}
 .v012-definition{margin:1.5rem auto 0;padding:1rem 1.1rem;border:1px solid #bdd6cc;border-radius:14px;background:#f4fbf7;color:#183e36;font-size:.98rem;line-height:1.75}
