@@ -1,7 +1,11 @@
 (()=>{
   const brandZh='海外機會雷達';
   const brandEn='Overseas Opportunity Radar';
-  const betaNotice='目前為 v0.1 內測版，用於海外 App / 工具機會研究與 MVP 驗證。AI 分析結果僅作為產品假設與研究參考，不代表市場結論、收入承諾或投資建議。';
+  const requestedLanguage=new URLSearchParams(location.search).get('lang');
+  const isTraditionalChinese=['zh','zh-HK','zh-hk'].includes(requestedLanguage);
+  const betaNotice=isTraditionalChinese
+    ? '目前為 v0.1 demo 版，用於海外 App / 工具機會研究與 MVP 驗證。AI 分析結果僅作為產品假設與研究參考，不代表市場結論、收入承諾或投資建議。'
+    : 'Currently in v0.1 demo mode, this tool is used for overseas app and tool opportunity research and MVP validation. AI analysis is only for product hypothesis and research reference. It does not represent market conclusions, revenue promises, or investment advice.';
 
   function replaceText(node,replacements){
     const walker=document.createTreeWalker(node,NodeFilter.SHOW_TEXT);
