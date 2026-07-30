@@ -2,6 +2,20 @@
   const requestedLanguage=new URLSearchParams(location.search).get('lang');
   const isEnglish=!['zh','zh-HK','zh-hk','zh-Hant','zh-hant'].includes(requestedLanguage);
   const t=(zh,en)=>isEnglish?en:zh;
+  const traditionalMap={
+    '户':'戶','馈':'饋','个':'個','团':'團','队':'隊','无':'無','优':'優','么':'麼','话':'話','邮':'郵','周':'週','时':'時','请':'請','见':'見','业':'業','设':'設','计':'計','务':'務','开':'開','进':'進','预':'預','账':'帳','态':'態','复':'複','踪':'蹤','动':'動','现':'現','会':'會','录':'錄','难':'難','发':'發','来':'來','过':'過','为':'為','体':'體','专':'專','经':'經','济':'濟','医':'醫','疗':'療','门':'門','约':'約','档':'檔','归':'歸','报':'報','结':'結','构':'構','样':'樣','标':'標','签':'籤','页':'頁','据':'據','资':'資','讯':'訊','网':'網','风':'風','险':'險','议':'議','证':'證','实':'實','际':'際','关':'關','键':'鍵','级':'級','别':'別','载':'載','释':'釋','点':'點','达':'達','场':'場','库':'庫','创':'創','广':'廣','转':'轉','换':'換','营':'營','销':'銷','审':'審','题':'題','简':'簡','单':'單','内':'內','书':'書','测':'測','试':'試','验':'驗','变':'變','与':'與','应':'應','该':'該','从':'從','后':'後','台':'臺','获':'獲','联':'聯','络':'絡','费':'費','钱':'錢','损':'損','失':'失','买':'買','卖':'賣','识':'識','读':'讀','写':'寫','输':'輸','出':'出','处':'處','理':'理','评':'評','价':'價','统':'統','学':'學','习':'習','历':'歷','这':'這','对':'對','杂':'雜','问':'問','请':'請','补':'補','续':'續','暂':'暫','缓':'緩','导':'導','还':'還','没':'沒','当':'當','软':'軟','击':'擊','链':'鏈','组':'組','织':'織','线':'線','类':'類','选':'選','择':'擇','节':'節','扩':'擴','张':'張','势':'勢','劣':'劣','滤':'濾','显':'顯','准':'準','备':'備','观':'觀','察':'察','认':'認','听':'聽','说':'說','语':'語','义':'義','译':'譯','满':'滿','仅':'僅','须':'須','并':'並','带':'帶','给':'給','让':'讓','帮':'幫'
+  };
+  const toTraditional=value=>String(value??'').replace(/[\u3400-\u9fff]/g,char=>traditionalMap[char]||char);
+  const hasChinese=value=>/[\u3400-\u9fff]/.test(String(value??''));
+  const languageInstruction=isEnglish
+    ?'Return the entire response in English only. Do not mix Chinese in headings, bullet points, analysis, validation questions, or task brief content. If the source material is Chinese, translate and summarize it into natural English.'
+    :'請用香港繁體中文輸出全部內容。不要使用簡體中文。不要中英混雜，除非是 Codex、Trae、MVP、Product Hunt 等專有名詞。';
+  const outputText=(value,kind='point')=>{
+    const text=String(value??'').trim();
+    if(!text)return '';
+    if(isEnglish&&hasChinese(text))return `English summary needed — verify and restate this ${kind} from the original source material.`;
+    return isEnglish?text:toTraditional(text);
+  };
   const ids=['audience','context','current','waste','test','where'];
   const form=document.querySelector('#form');
   if(!form)return;
@@ -19,14 +33,14 @@
     Object.entries(attrs).forEach(([key,value])=>node.setAttribute(key,value));
     return node;
   };
-  const asLines=value=>{
-    if(Array.isArray(value))return value.map(item=>String(item).trim()).filter(Boolean);
-    return String(value||'').split(/\n|[；;]/).map(item=>item.replace(/^[-•\d.\s]+/,'').trim()).filter(Boolean);
+  const asLines=(value,kind='point')=>{
+    if(Array.isArray(value))return value.map(item=>outputText(item,kind)).filter(Boolean);
+    return String(value||'').split(/\n|[；;]/).map(item=>outputText(item.replace(/^[-•\d.\s]+/,'').trim(),kind)).filter(Boolean);
   };
-  const addList=(container,title,items)=>{
+  const addList=(container,title,items,kind)=>{
     const heading=create('h3',{text:title});
     const list=create('ul');
-    const values=asLines(items);
+    const values=asLines(items,kind);
     (values.length?values:[t('暫時未有足夠資料，請回到原始來源補充。','Not enough material yet. Return to the original sources and add more evidence.')]).slice(0,4).forEach(item=>list.append(create('li',{text:item})));
     container.append(heading,list);
   };
@@ -52,11 +66,11 @@
     catch{alert(t('瀏覽器未允許自動複製，請手動複製文字。','Your browser did not allow automatic copying. Please copy the text manually.'));}
   };
   const buildTaskBrief=(answers,data)=>{
-    const direction=pain?(isEnglish?(pain.title_en||pain.title_zh):pain.title_zh):(answers.context||t('待確認方向','Direction to confirm'));
-    const target=answers.audience||t('待補充目標用戶','Target user to confirm');
-    const problem=answers.waste||pain?.pain_point||t('待補充核心問題','Core problem to confirm');
-    const alternative=answers.current||pain?.current_solution||t('待補充現有替代方案','Current alternatives to confirm');
-    const scope=[...asLines(answers.test),...asLines(data.questions)].filter(Boolean).slice(0,3);
+    const direction=outputText(pain?(isEnglish?(pain.title_en||pain.title_zh):pain.title_zh):(answers.context||t('待確認方向','Direction to confirm')),'direction');
+    const target=outputText(answers.audience||t('待補充目標用戶','Target user to confirm'),'target user');
+    const problem=outputText(answers.waste||pain?.pain_point||t('待補充核心問題','Core problem to confirm'),'core problem');
+    const alternative=outputText(answers.current||pain?.current_solution||t('待補充現有替代方案','Current alternatives to confirm'),'current alternative');
+    const scope=[...asLines(answers.test,'MVP validation step'),...asLines(data.questions,'MVP validation step')].filter(Boolean).slice(0,3);
     while(scope.length<3)scope.push(t('以一個最小流程驗證核心假設。','Validate one core hypothesis with a minimal workflow.'));
     return isEnglish?`# MVP Validation Task Brief
 
@@ -161,13 +175,13 @@ ${validationChecklist().map(item=>`- ${item}`).join('\n')}
     if(Object.values(answers).filter(Boolean).length<2)return alert(t('請先至少填寫兩項，再讓 AI 協助整理。','Complete at least two fields before asking AI to organize them.'));
     button.disabled=true;button.textContent=t('正在整理…','Organizing…');
     try{
-      const response=await fetch('/api/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answers,pain:pain?{title:pain.title_zh,industry:pain.industry,pain_type:pain.pain_type,specific_task:pain.specific_task,pain_point:pain.pain_point}:null})});
+      const response=await fetch('/api/assist',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({answers:{...answers,language_instruction:languageInstruction},pain:pain?{title:pain.title_zh,industry:pain.industry,pain_type:pain.pain_type,specific_task:pain.specific_task,pain_point:pain.pain_point}:null})});
       const data=await response.json();
       if(!response.ok)throw Error(data.error||t('暫時無法完成整理','Unable to complete the review right now.'));
       result.replaceChildren();
       const review=create('section',{className:'ai-review-summary'});
       review.append(create('div',{className:'eyebrow',text:'AI ASSISTED REVIEW'}),create('h2',{text:t('這個方向的待驗證重點','What still needs validation for this direction')}));
-      addList(review,t('需要補充','What to add'),data.gaps);addList(review,t('需要留意','What to watch'),data.risks);addList(review,t('下一步驗證','Next validation steps'),data.questions);
+      addList(review,t('需要補充','What to add'),data.gaps,'evidence gap');addList(review,t('需要留意','What to watch'),data.risks,'risk');addList(review,t('下一步驗證','Next validation steps'),data.questions,'validation step');
       review.append(create('p',{className:'notice',text:t('AI 只協助澄清資料、識別風險與提出驗證問題，不代表機會已成立。','AI only helps clarify material, identify risks, and suggest validation questions. It does not prove that an opportunity exists.')}));
       result.append(review);addNextSteps(data,answers);
       result.hidden=false;result.scrollIntoView({behavior:'smooth',block:'nearest'});

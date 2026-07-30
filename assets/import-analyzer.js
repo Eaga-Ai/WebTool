@@ -8,6 +8,15 @@
   const requestedLanguage=new URLSearchParams(location.search).get('lang');
   const isEnglish=!['zh','zh-HK','zh-hk','zh-Hant','zh-hant'].includes(requestedLanguage);
   const t=(zh,en)=>isEnglish?en:zh;
+  const traditionalMap={'户':'戶','馈':'饋','个':'個','团':'團','队':'隊','无':'無','优':'優','么':'麼','话':'話','邮':'郵','周':'週','时':'時','请':'請','见':'見','业':'業','设':'設','计':'計','务':'務','开':'開','进':'進','预':'預','账':'帳','态':'態','复':'複','踪':'蹤','动':'動','现':'現','会':'會','录':'錄','难':'難','发':'發','来':'來','过':'過','为':'為','体':'體','专':'專','经':'經','济':'濟','医':'醫','疗':'療','门':'門','约':'約','档':'檔','归':'歸','报':'報','结':'結','构':'構','样':'樣','标':'標','签':'籤','页':'頁','据':'據','资':'資','讯':'訊','网':'網','风':'風','险':'險','议':'議','证':'證','实':'實','际':'際','关':'關','键':'鍵','级':'級','别':'別','载':'載','释':'釋','点':'點','达':'達','场':'場','库':'庫','创':'創','广':'廣','转':'轉','换':'換','营':'營','销':'銷','审':'審','题':'題','简':'簡','单':'單','内':'內','书':'書','测':'測','试':'試','验':'驗','变':'變','与':'與','应':'應','该':'該','从':'從','后':'後','台':'臺','获':'獲','联':'聯','络':'絡','费':'費','钱':'錢','损':'損','失':'失','买':'買','卖':'賣','识':'識','读':'讀','写':'寫','输':'輸','出':'出','处':'處','理':'理','评':'評','价':'價','统':'統','学':'學','习':'習','历':'歷','这':'這','对':'對','杂':'雜','问':'問','补':'補','续':'續','暂':'暫','缓':'緩','导':'導','还':'還','没':'沒','软':'軟','击':'擊','链':'鏈','组':'組','织':'織','线':'線','类':'類','选':'選','择':'擇','节':'節','扩':'擴','张':'張','势':'勢','劣':'劣','滤':'濾','显':'顯','准':'準','备':'備','观':'觀','察':'察','认':'認','听':'聽','说':'說','语':'語','义':'義','译':'譯','满':'滿','仅':'僅','须':'須','并':'並','带':'帶','给':'給','让':'讓','帮':'幫'};
+  const toTraditional=value=>String(value??'').replace(/[\u3400-\u9fff]/g,char=>traditionalMap[char]||char);
+  const hasChinese=value=>/[\u3400-\u9fff]/.test(String(value??''));
+  const outputText=(value,kind='analysis point')=>{
+    const text=String(value??'').trim();
+    if(!text)return '';
+    if(isEnglish&&hasChinese(text))return `English summary needed — verify and restate this ${kind} from the original source material.`;
+    return isEnglish?text:toTraditional(text);
+  };
 
   const el=(tag,options={})=>{
     const node=document.createElement(tag);
@@ -28,9 +37,9 @@
     if(Array.isArray(value))return value.length?value.map(item=>`${indent}- ${formatAnalysisValue(item,`${indent}  `).replace(/^\s*-\s*/, '')}`).join('\n'):'—';
     if(typeof value==='object'){
       const entries=Object.entries(value);
-      return entries.length?entries.map(([key,item])=>`${indent}- ${key}：${formatAnalysisValue(item,`${indent}  `).replace(/^\s*-\s*/, '')}`).join('\n'):'—';
+      return entries.length?entries.map(([key,item])=>`${indent}- ${outputText(key,'field label') || 'Field'}: ${formatAnalysisValue(item,`${indent}  `).replace(/^\s*-\s*/, '')}`).join('\n'):'—';
     }
-    return String(value).trim()||'—';
+    return outputText(value)||'—';
   }
   const escapeCsvRow=row=>row.map(value=>`"${String(value??'').replace(/"/g,'""')}"`).join(',');
 
@@ -135,7 +144,7 @@
   }
   function chooseRecommendation(data){
     const value=String(data.opportunity_recommendation||'').trim();
-    if(value)return value;
+    if(value)return outputText(value,'opportunity judgment');
     const score=Number(data.opportunity_score)||1;
     if(data.evidence_status?.includes('不足')||data.evidence_status?.includes('補充'))return t('暫緩：先補充真實樣本','Pause: collect more real samples first');
     if(score>=70)return t('推薦繼續研究','Worth further research');
@@ -183,7 +192,7 @@
     result.scrollIntoView({behavior:'smooth',block:'start'});
   }
   function summaryMarkdown(data){
-    const research=t(`研究方向：${direction.value.trim()||'—'}\n目標平台：${platform.value}\n目標市場：${market.value}`,`Study direction: ${direction.value.trim()||'—'}\nTarget platform: ${platform.value}\nTarget market: ${market.value}`);
+    const research=t(`研究方向：${direction.value.trim()||'—'}\n目標平台：${platform.value}\n目標市場：${market.value}`,`Study direction: ${outputText(direction.value.trim()||'—','study direction') || '—'}\nTarget platform: ${platform.value}\nTarget market: ${market.value}`);
     const recommendation=chooseRecommendation(data);
     const sections=[[t('主要痛點','Key pain points'),data.repeated_pain_points],[t('可切入方向','Possible opportunity angle'),data.ai_entry_points],[t('最小 MVP','Smallest MVP'),data.mvp_scope],[t('下一步驗證','Next validation steps'),data.mvp_validation_task]];
     return `# ${t('海外機會雷達｜簡明結論','Overseas Opportunity Radar | Short Conclusion')}\n\n${research}\n\n## ${t('機會判斷','Opportunity judgment')}\n${recommendation}\n\n## ${t('機會評分','Opportunity score')}\n${Math.min(100,Math.max(1,Number(data.opportunity_score)||1))} / 100\n\n## ${t('評分理由','Why this score')}\n${formatAnalysisValue(data.opportunity_score_reason)}\n\n${sections.map(([title,value])=>`## ${title}\n${formatAnalysisValue(value)}`).join('\n\n')}\n\n> ${t('本分析僅基於本次導入資料整理，不代表市場結論、投資建議或產品承諾。','This analysis is based only on the material imported in this session. It is not a market conclusion, investment recommendation, or product promise.')}`;
@@ -193,7 +202,7 @@
     const score=result.querySelector('.analysis-score .score-number')?.textContent||t('待生成','Pending');
     const judgement=result.querySelector('.analysis-score strong')?.textContent||t('待生成','Pending');
     const reason=result.querySelector('.score-reason')?.textContent||'';
-    const research=t(`研究方向：${direction.value.trim()||'—'}\n目標平台：${platform.value}\n目標市場：${market.value}\n資料類型：${sourceType.value}\n代表競品（輸入）：${competitors.value.trim()||'—'}`,`Study direction: ${direction.value.trim()||'—'}\nTarget platform: ${platform.value}\nTarget market: ${market.value}\nSource type: ${sourceType.value}\nCompetitors provided: ${competitors.value.trim()||'—'}`);
+    const research=t(`研究方向：${direction.value.trim()||'—'}\n目標平台：${platform.value}\n目標市場：${market.value}\n資料類型：${sourceType.value}\n代表競品（輸入）：${competitors.value.trim()||'—'}`,`Study direction: ${outputText(direction.value.trim()||'—','study direction') || '—'}\nTarget platform: ${platform.value}\nTarget market: ${market.value}\nSource type: ${sourceType.value}\nCompetitors provided: ${outputText(competitors.value.trim()||'—','competitor name') || '—'}`);
     const titles={source_summary:t('資料摘要與來源類型','Source summary and type'),representative_competitors:t('代表競品','Representative competitors'),repeated_pain_points:t('重複出現的用戶痛點','Repeated user pain points'),positive_insights:t('好評洞察','Positive insights'),negative_insights:t('差評洞察','Negative insights'),feature_requests:t('功能請求','Feature requests'),pricing_complaints:t('價格／訂閱抱怨','Pricing or subscription complaints'),current_alternatives:t('現有替代方案','Current alternatives'),ai_entry_points:t('AI 可切入點','AI entry points'),validation_hypotheses:t('待驗證假設','Validation hypotheses'),compliance_risks:t('合規或平台風險','Compliance or platform risks'),mvp_scope:t('MVP 範圍建議','MVP scope suggestions'),avoid_first_version:t('不建議第一版做什麼','What to avoid in v1'),mvp_validation_task:t('MVP 驗證任務書','MVP validation task brief')};
     return `# ${t('海外機會雷達｜外部資料出海機會分析','Overseas Opportunity Radar | External Source Opportunity Analysis')}\n\n${research}\n\n## ${t('簡明結論','Short conclusion')}\n${t('機會判斷','Opportunity judgment')}: ${judgement}\n${t('機會評分','Opportunity score')}: ${score}\n${reason}\n\n${Object.entries(titles).map(([key,title])=>`## ${title}\n${values[key]||'—'}`).join('\n\n')}\n\n> ${t('本分析僅基於本次導入資料整理，不代表市場結論、投資建議或產品承諾。請核對原始來源並自行驗證。','This analysis is based only on the material imported in this session. It is not a market conclusion, investment recommendation, or product promise. Verify the original sources and make your own judgment.')}`;
   }
